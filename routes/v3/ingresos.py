@@ -65,7 +65,6 @@ class IngresosView(MasterView):
         # 3. SQL Movimiento (Lógica: Si existe actualiza, si no existe crea)
         campo_egreso_real = f", EgresoReal = '{egreso_real_actual}'" if egresar else ""
         mensaje_exito = "Operación realizada con éxito."
-        
         sql_movimiento = f"""
             UPDATE MV_INGRESOS SET 
                 ApellidoNombre = '{data.get('apellido_nombre','')}', Egreso = '{data.get('egreso','')}', 
