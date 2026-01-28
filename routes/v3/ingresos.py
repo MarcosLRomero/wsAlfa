@@ -326,3 +326,56 @@ class IngresosView(MasterView):
             json.dumps(response, ensure_ascii=False),
             mimetype="application/json"
         )
+
+    @route('/estadisticas', methods=['GET'])
+    def estadisticas(self):
+        desde = request.args.get('desde', '').strip()
+        hasta = request.args.get('hasta', '').strip()
+
+        if not desde or not hasta:
+            from flask import Response, json
+            empty_response = set_response([], 400, "Faltan parametros desde/hasta")
+            return Response(
+                json.dumps(empty_response, ensure_ascii=False),
+                mimetype="application/json"
+            )
+
+        try:
+            datetime.strptime(desde, '%Y-%m-%d')
+            datetime.strptime(hasta, '%Y-%m-%d')
+        except ValueError:
+            from flask import Response, json
+            error_response = set_response([], 400, "Formato de fecha invalido. Use YYYY-MM-DD")
+            return Response(
+                json.dumps(error_response, ensure_ascii=False),
+                mimetype="application/json"
+            )
+
+        sql = f"""
+        SELECT
+          SUM(ingresaron) AS ingresaron,
+          SUM(en_predio) AS en_predio,
+          SUM(egresaron) AS egresaron,
+          SUM(adultos) AS adultos,
+          SUM(menores) AS menores,
+          SUM(jubilados) AS jubilados,
+          SUM(estacionamientos) AS estacionamientos,
+          SUM(motorhome) AS motorhome,
+          SUM(bajada_lancha) AS bajada_lancha
+        FROM dbo.vw_estadisticas_ingresos_diarias
+        WHERE Fecha BETWEEN '{desde}' AND '{hasta}';
+        """
+
+        result, error = get_customer_response(sql, " al obtener estadisticas.", True, self.token_global)
+        response = set_response(result, 200 if not error else 404, "" if not error else result[0]['message'])
+
+        from flask import Response, json
+        print(response)
+        
+        if error:
+            self.log({result}, "ERROR")
+
+        return Response(
+            json.dumps(response, ensure_ascii=False),
+            mimetype="application/json"
+        )
