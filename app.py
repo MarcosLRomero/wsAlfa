@@ -40,6 +40,7 @@ from routes.v2.cart import CartView
 from routes.v2.configuration import ConfigurationView
 from routes.v2.mercadolibre import MercadoLibreView
 from routes.v2.ingresos import IngresosView
+from routes.v2.Inventario import InventarioView
 
 # Transport
 from routes.v2.transport.remittances import RemittancesTransportView
@@ -136,6 +137,7 @@ ConfigurationView.register(app, route_base=f'{API_PREFIX}/configuration')
 ReportView.register(app, route_base=f'{API_PREFIX}/report')
 MercadoLibreView.register(app, route_base=f'{API_PREFIX}/ml')
 IngresosView.register(app, route_base=f'{API_PREFIX}/ingresos')
+InventarioView.register(app, route_base=f'{API_PREFIX}/inventario')
 
 
 
