@@ -24,7 +24,7 @@ class OrderView(MasterView):
             obs = order.get('obs', '')
             sale_condition = order.get('condition', '')
             tc = order.get('tc', 'NP')
-
+            tc = (tc or 'NP').strip().upper()
 
             sql = f"""
             DECLARE @pRes INT
@@ -35,7 +35,7 @@ class OrderView(MasterView):
 
             SELECT @pRes as pRes, @pMensaje as pMensaje, @pIdCpte pIdCpte
             """
-
+            
             try:
                 result, error = exec_customer_sql(sql, " al grabar los pedidos", self.token_global, True)
             except Exception as r:
