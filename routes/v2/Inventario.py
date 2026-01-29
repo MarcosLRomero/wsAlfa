@@ -15,19 +15,20 @@ class InventarioView(MasterView):
         if not observaciones:
             observaciones = 'Creada desde el colector'
 
-        id_deposito = data.get('iddeposito', '1')
+        id_deposito = data.get('iddeposito', '   1')
+        if not id_deposito:
+            id_deposito = '   1'
         usuario = data.get('usuario', 'Colector')
 
+        fecha = datetime.now().strftime('%d/%m/%Y')
         sql_header = f"""
-        DECLARE @ids TABLE (IdInventario INT)
+        DECLARE @pRes INT
+        DECLARE @pMensaje NVARCHAR(250)
+        DECLARE @pIdInventario INT
 
-        INSERT INTO MV_INVENTARIOSCAB
-            (Fecha, IdDeposito, Usuario, Observaciones, Finalizada, Filtros, Consolidado, AjusteStock)
-        OUTPUT INSERTED.IdInventario INTO @ids
-        VALUES
-            (GETDATE(), '{id_deposito}', '{usuario}', '{observaciones}', 0, NULL, NULL, NULL)
+        set nocount on; EXEC sp_web_MV_INVENTARIOCAB '{fecha}','{id_deposito}','{usuario}','{observaciones}',@pRes OUTPUT, @pMensaje OUTPUT,@pIdInventario OUTPUT
 
-        SELECT IdInventario FROM @ids
+        SELECT @pRes as pRes, @pMensaje as pMensaje, @pIdInventario pIdInventario
         """
 
         try:
@@ -39,19 +40,43 @@ class InventarioView(MasterView):
             self.log(str(result[0]['message']) + "\nSENTENCIA : " + sql_header)
             return set_response(None, 404, "Ocurrio un error al grabar el inventario.")
 
-        inventario_id = result[0][0]
+        result_code = result[0][0]
+        if result_code != 11:
+            self.log(str(result[0][1]) + "\nSENTENCIA : " + sql_header)
+            return set_response(None, 404, result[0][1])
 
+        inventario_id = result[0][2]
+
+        def _to_number(value):
+            if value is None:
+                return 0
+            try:
+                if isinstance(value, str):
+                    value = value.replace(',', '.').strip()
+                return float(value)
+            except Exception:
+                return 0
+        print(items)
         for item in items:
-            id_articulo = item.get('idarticulo', '')
+            id_articulo = item.get('idarticulo', '') or item.get('product', '')
+            if id_articulo is None:
+                id_articulo = ''
+            id_articulo = str(id_articulo)
+            if len(id_articulo) < 25:
+                id_articulo = id_articulo.rjust(25)
+            else:
+                id_articulo = id_articulo[:25]
             id_unidad = item.get('idunidad', '')
-            conteo1 = item.get('conteo1', 0)
-            costo = item.get('costo', 0)
+            conteo1 = item.get('conteo1', item.get('quantity', 0))
+            costo = item.get('costo', item.get('amount', item.get('unitary', 0)))
+            conteo1 = _to_number(conteo1)
+            costo = _to_number(costo)
 
             sql_detail = f"""
             INSERT INTO MV_INVENTARIOS
                 (IdInventario, IdArticulo, IdUnidad, Stock, Conteo1, Conteo2, Diferencia, Costo)
             VALUES
-                ({inventario_id}, '{id_articulo}', '{id_unidad}', NULL, {conteo1}, NULL, NULL, {costo})
+                ({inventario_id}, '{id_articulo}', '{id_unidad}', 0, {conteo1}, 0, 0, {costo})
             """
 
             try:

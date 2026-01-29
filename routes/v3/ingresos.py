@@ -218,7 +218,7 @@ class IngresosView(MasterView):
         
         result, error = get_customer_response(sql, f" al obtener los precios .", True, self.token_global)
         response = set_response(result, 200 if not error else 404, "" if not error else result[0]['message'])
-        
+        print(response) 
         if error:
             self.log({result}, "ERROR")
         
